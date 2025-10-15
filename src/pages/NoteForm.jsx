@@ -54,35 +54,17 @@ const NoteForm = () => {
 
   const uploadFiles = async () => {
     if (files.length === 0) return [];
-
     const formData = new FormData();
     files.forEach((file) => formData.append("media", file));
 
-    try {
-      const res = await axios.post(
-        `${window.location.origin}/api/image`, // upload endpoint
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const res = await axios.post("http://localhost:5123/api/image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      // Prepend window.location.origin + /api/uploads for full URL
-      const fullUrls = res.data.urls.map((url) =>
-        url.startsWith("http")
-          ? url
-          : `${window.location.origin}/api/uploads/${url.replace(/^\/+/, "")}`
-      );
-
-      return fullUrls;
-    } catch (err) {
-      console.error("Upload failed:", err);
-      toast.error("Failed to upload media");
-      return [];
-    }
+    return res.data.urls;
   };
 
   const handleSubmit = (e) => {
