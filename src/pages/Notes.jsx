@@ -121,13 +121,14 @@ const Notes = () => {
 
   const renderMedia = (media) => {
     if (!media || media.length === 0) return null;
-    const file = media[0];
-    const isVideo = file.endsWith(".mp4");
-    const src = file.startsWith("http")
-      ? file
-      : `${window.location.origin}/api/uploads/${file
-          .replace(/^\/+/, "")
-          .replace(/\\/g, "/")}`;
+
+    // Use the first file
+    const src = media[0].startsWith("http")
+      ? media[0]
+      : `${window.location.origin}/api/uploads/${media[0].replace(/^\/+/, "")}`;
+
+    const isVideo =
+      src.endsWith(".mp4") || src.endsWith(".webm") || src.endsWith(".ogg");
 
     return (
       <MotionDiv
@@ -139,6 +140,8 @@ const Notes = () => {
           display: "flex",
           justifyContent: "center",
           background: "#000",
+          borderRadius: 10,
+          overflow: "hidden",
         }}
       >
         {isVideo ? (
@@ -150,7 +153,7 @@ const Notes = () => {
         ) : (
           <img
             src={src}
-            alt="note"
+            alt="note media"
             style={{ width: "100%", borderRadius: 10, objectFit: "cover" }}
             onError={(e) => (e.target.style.display = "none")}
           />
