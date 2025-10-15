@@ -45,6 +45,13 @@ const EditNote = () => {
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // Helper to generate correct full URL for uploaded files
+  const getFullFileUrl = (url) => {
+    if (url.startsWith("http")) return url;
+    // Remove trailing /api from API_URL for uploads
+    return `${API_URL.replace(/\/api$/, "")}${url}`;
+  };
+
   useEffect(() => {
     fetchNote();
   }, [id]);
@@ -55,15 +62,10 @@ const EditNote = () => {
       setTitle(note.title);
       setContent(note.content);
 
-      const fullPreviews = (note.media || []).map((url) => {
-        const fullUrl = url.startsWith("http")
-          ? url
-          : `${API_URL.replace(/\/api$/, "")}${url}`; // remove /api
-        return {
-          url: fullUrl,
-          type: getMimeTypeFromUrl(fullUrl),
-        };
-      });
+      const fullPreviews = (note.media || []).map((url) => ({
+        url: getFullFileUrl(url),
+        type: getMimeTypeFromUrl(url),
+      }));
 
       setPreview(fullPreviews);
     } catch {
@@ -73,7 +75,6 @@ const EditNote = () => {
 
   const handleFileChange = (e) => {
     const selected = Array.from(e.target.files);
-
     setFiles(selected);
 
     const newPreviews = selected.map((file) => ({
@@ -91,28 +92,23 @@ const EditNote = () => {
 
   const uploadFiles = async () => {
     if (files.length === 0) {
-      // No new files, just return existing preview URLs
-      return preview.map((item) => item.url);
+      // Keep already uploaded URLs
+      return preview
+        .filter((p) => !p.url.startsWith("blob:"))
+        .map((p) => p.url.replace(API_URL.replace(/\/api$/, ""), ""));
     }
 
-    try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("media", file));
+    const formData = new FormData();
+    files.forEach((file) => formData.append("media", file));
 
-      // Use API_URL directly without adding extra /api
-      const res = await axios.post(`${API_URL}/image`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const res = await axios.post(`${API_URL}/image`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      return res.data.urls;
-    } catch (err) {
-      console.error("Error uploading files:", err);
-      toast.error("Failed to upload files");
-      return [];
-    }
+    return res.data.urls;
   };
 
   const handleSubmit = (e) => {
