@@ -95,12 +95,16 @@ const EditNote = () => {
     const formData = new FormData();
     files.forEach((file) => formData.append("media", file));
 
-    const res = await axios.post("http://localhost:5123/image", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await axios.post(
+      `${window.location.origin}/api/image`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     return res.data.urls;
   };

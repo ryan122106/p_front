@@ -52,7 +52,7 @@ const Notes = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(searchText),1);
+    const handler = setTimeout(() => setDebouncedSearch(searchText), 1);
     return () => clearTimeout(handler);
   }, [searchText]);
   const fetchNotes = async () => {
@@ -125,7 +125,9 @@ const Notes = () => {
     const isVideo = file.endsWith(".mp4");
     const src = file.startsWith("http")
       ? file
-      : `http://localhost:5123/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
+      : `${window.location.origin}/api/uploads/${file
+          .replace(/^\/+/, "")
+          .replace(/\\/g, "/")}`;
 
     return (
       <MotionDiv
@@ -320,7 +322,7 @@ const Notes = () => {
                               <Typography
                                 variant="subtitle1"
                                 fontWeight="bold"
-                                sx={{ cursor: "pointer", color:"#fff" }}
+                                sx={{ cursor: "pointer", color: "#fff" }}
                                 onClick={() =>
                                   navigate(`/profile/${note.user?._id}`)
                                 }
@@ -350,15 +352,13 @@ const Notes = () => {
 
                         {/* 🖼 Media */}
 
-                          {renderMedia(note.media, note.title)}
-
-
+                        {renderMedia(note.media, note.title)}
 
                         {/* 📝 Content */}
                         <CardContent sx={{ px: 3, py: 2 }}>
                           <Typography
                             variant="h6"
-                            sx={{ fontWeight: "bold", mb: 1 , color: "#fff"}}
+                            sx={{ fontWeight: "bold", mb: 1, color: "#fff" }}
                           >
                             {note.title}
                           </Typography>
