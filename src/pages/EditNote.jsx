@@ -89,20 +89,28 @@ const EditNote = () => {
 
   const uploadFiles = async () => {
     if (files.length === 0) {
+      // No new files, just return existing preview URLs
       return preview.map((item) => item.url);
     }
 
-    const formData = new FormData();
-    files.forEach((file) => formData.append("media", file));
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("media", file));
 
-    const res = await axios.post(`${API_URL}/api/image`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      // Use API_URL directly without adding extra /api
+      const res = await axios.post(`${API_URL}/image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    return res.data.urls;
+      return res.data.urls;
+    } catch (err) {
+      console.error("Error uploading files:", err);
+      toast.error("Failed to upload files");
+      return [];
+    }
   };
 
   const handleSubmit = (e) => {
