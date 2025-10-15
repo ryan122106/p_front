@@ -56,7 +56,9 @@ const EditNote = () => {
       setContent(note.content);
 
       const fullPreviews = (note.media || []).map((url) => {
-        const fullUrl = url.startsWith("http") ? url : `${API_URL}/${url}`;
+        const fullUrl = url.startsWith("http")
+          ? url
+          : `${API_URL.replace(/\/api$/, "")}${url}`; // remove /api
         return {
           url: fullUrl,
           type: getMimeTypeFromUrl(fullUrl),
