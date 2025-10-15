@@ -7,9 +7,11 @@ import {
   Typography,
   Avatar,
   Card,
+  CardContent,
   Button,
   Divider,
   CircularProgress,
+  Grid,
   Chip,
   IconButton,
   Stack,
@@ -46,14 +48,6 @@ const UserProfile = () => {
   const [likedNotes, setLikedNotes] = useState([]);
   const [likes, setLikes] = useState({});
   const [loading, setLoading] = useState(true);
-  const [confirmDialog, setConfirmDialog] = useState({
-    open: false,
-    userId: null,
-    isBlocked: false,
-  });
-
-  const isAdmin = currentuser?.role === "admin";
-  const userIdToFetch = id || currentuser?._id;
 
   useEffect(() => {
     if (!currentuser?.token) {
@@ -61,6 +55,8 @@ const UserProfile = () => {
       navigate("/login");
     }
   }, [currentuser, navigate]);
+
+  const userIdToFetch = id || currentuser?._id;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -74,13 +70,15 @@ const UserProfile = () => {
         const liked = await getUserLikedNotes(userIdToFetch, currentuser.token);
         setLikedNotes(liked);
 
+        setLikedNotes(liked);
+
         const counts = {};
         for (const n of [...notes, ...liked]) {
           counts[n._id] = await getLikesCount(n._id, "note", currentuser.token);
         }
         setLikes(counts);
       } catch (err) {
-        console.error(err);
+        console.error("Error loading profile:", err);
         toast.error("Failed to load profile");
       } finally {
         setLoading(false);
@@ -95,24 +93,40 @@ const UserProfile = () => {
       await deleteNote(noteId, currentuser.token);
       setMyNotes(myNotes.filter((n) => n._id !== noteId));
       toast.success("Note deleted");
-    } catch {
+    } catch (err) {
       toast.error("Failed to delete note");
     }
   };
 
-  const handleLikeToggle = async (noteId, unlike = false) => {
+  const handleUnlike = async (noteId) => {
+    try {
+      await toggleLike(noteId, currentuser.token);
+      setLikedNotes((prev) => prev.filter((n) => n._id !== noteId));
+      const count = await getLikesCount(noteId, "note", currentuser.token);
+      setLikes((prev) => ({ ...prev, [noteId]: count }));
+      toast.success("Unliked note");
+    } catch (err) {
+      toast.error("Failed to unlike note");
+    }
+  };
+
+  const handleLike = async (noteId) => {
     try {
       await toggleLike(noteId, currentuser.token);
       const count = await getLikesCount(noteId, "note", currentuser.token);
       setLikes((prev) => ({ ...prev, [noteId]: count }));
-      if (unlike) setLikedNotes((prev) => prev.filter((n) => n._id !== noteId));
     } catch {
       toast.error("Error toggling like");
     }
   };
 
-  const handleConfirmBlock = (userId, isBlocked) =>
-    setConfirmDialog({ open: true, userId, isBlocked });
+  const handleConfirmBlock = (userId, isBlocked) => {
+    setConfirmDialog({
+      open: true,
+      userId,
+      isBlocked,
+    });
+  };
 
   const handleToggleBlock = async () => {
     const { userId, isBlocked } = confirmDialog;
@@ -130,10 +144,33 @@ const UserProfile = () => {
     }
   };
 
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    userId: null,
+    isBlocked: false,
+  });
+
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="70vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!profile) return null;
+
   const renderMedia = (media) => {
     if (!media || media.length === 0) return null;
+
     const file = media[0];
     const isVideo = file.endsWith(".mp4");
+
     const src = file.startsWith("http")
       ? file
       : `http://localhost:5123/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
@@ -217,7 +254,7 @@ const UserProfile = () => {
           {!isLiked ? (
             <>
               <IconButton
-                onClick={() => handleLikeToggle(note._id)}
+                onClick={() => handleLike(note._id)}
                 sx={{
                   color: "#90caf9",
                   "&:hover": { color: "#64b5f6", transform: "scale(1.1)" },
@@ -231,10 +268,12 @@ const UserProfile = () => {
               </Typography>
             </>
           ) : (
+            //  If this IS a liked note, just show like count (no like button)
             <Typography variant="body2" color="#bbb">
               👍 {likes[note._id] || 0} Likes
             </Typography>
           )}
+
           <IconButton
             onClick={() => navigate(`/comments/${note._id}`)}
             sx={{
@@ -263,9 +302,11 @@ const UserProfile = () => {
               </IconButton>
             </>
           )}
+
+          {/* Dislike (unlike) only visible for liked notes */}
           {isLiked && String(userIdToFetch) === String(currentuser._id) && (
             <IconButton
-              onClick={() => handleLikeToggle(note._id, true)}
+              onClick={() => handleUnlike(note._id)}
               sx={{
                 color: "#f44336",
                 "&:hover": { color: "#e53935", transform: "scale(1.1)" },
@@ -280,156 +321,209 @@ const UserProfile = () => {
     </Paper>
   );
 
+  const isAdmin = currentuser?.role === "admin";
+
   return (
     <>
       <Header current="profile" title="User Profile" />
       <Container
         maxWidth="sm"
-        sx={{ mt: 6, mb: 6, display: "flex", justifyContent: "center" }}
+        sx={{
+          mt: 6,
+          mb: 6,
+          display: "flex",
+          justifyContent: "center",
+        }}
       >
-        {loading ? (
+        <Card
+          elevation={8}
+          sx={{
+            borderRadius: 4,
+            p: 3,
+            bgcolor: "#181818",
+            color: "#fff",
+            border: "1px solid #2a2a2a",
+            boxShadow: "0 4px 25px rgba(0,0,0,0.4)",
+            width: "100%",
+            maxWidth: "600px",
+          }}
+        >
           <Box
             display="flex"
-            justifyContent="center"
+            flexDirection="column"
             alignItems="center"
-            minHeight="70vh"
+            textAlign="center"
+            mb={3}
           >
-            <CircularProgress />
+            <Avatar
+              sx={{
+                width: 90,
+                height: 90,
+                mb: 1.5,
+                bgcolor:
+                  profile.role === "admin" ? "error.main" : "primary.main",
+                fontSize: 36,
+                fontWeight: "bold",
+                boxShadow: "0 0 20px rgba(0,0,0,0.5)",
+              }}
+            ></Avatar>
+
+            <Typography variant="h6" fontWeight="bold">
+              {profile.name}
+            </Typography>
+            <Chip
+              label={profile.role.toUpperCase()}
+              color={profile.role === "admin" ? "error" : "primary"}
+              sx={{
+                mt: 0.5,
+                mb: 1,
+                fontWeight: "bold",
+              }}
+            />
+
+            <Typography variant="body2" sx={{ color: "#bbb" }}>
+              {profile.email}
+            </Typography>
           </Box>
-        ) : profile ? (
-          <Card
-            elevation={8}
-            sx={{
-              borderRadius: 4,
-              p: 3,
-              bgcolor: "#181818",
-              color: "#fff",
-              border: "1px solid #2a2a2a",
-              boxShadow: "0 4px 25px rgba(0,0,0,0.4)",
-              width: "100%",
-              maxWidth: "600px",
-            }}
-          >
-            <Box
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-              textAlign="center"
-              mb={3}
+
+          <Divider sx={{ mb: 2, borderColor: "#333" }} />
+
+          {/* Admin View */}
+          {isAdmin && profile._id !== currentuser._id ? (
+            <>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                🛠 Manage {profile.role === "admin" ? "Admin" : "User"}
+              </Typography>
+
+              <Button
+                variant="contained"
+                color={profile.isBlocked ? "success" : "error"}
+                onClick={() =>
+                  handleConfirmBlock(profile._id, profile.isBlocked)
+                }
+                sx={{ borderRadius: 3, px: 3, mb: 2 }}
+              >
+                {profile.isBlocked ? "Unblock" : "Block"}
+              </Button>
+
+              <Divider sx={{ my: 2, borderColor: "#333" }} />
+
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                📝 {profile.name}'s Notes
+              </Typography>
+              {myNotes.length > 0 ? (
+                myNotes.map((n) => renderNoteCard(n, false, false))
+              ) : (
+                <Typography color="#aaa">No notes yet.</Typography>
+              )}
+
+              <Divider sx={{ my: 2, borderColor: "#333" }} />
+
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                ❤️ Liked Notes
+              </Typography>
+              {likedNotes.length > 0 ? (
+                likedNotes.map((n) => renderNoteCard(n, false, true))
+              ) : (
+                <Typography color="#aaa">No liked notes yet.</Typography>
+              )}
+            </>
+          ) : (
+            <>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                📝 My Notes
+              </Typography>
+              {myNotes.length > 0 ? (
+                myNotes.map((n) =>
+                  renderNoteCard(
+                    n,
+                    !id && n.user?._id === currentuser._id,
+                    false
+                  )
+                )
+              ) : (
+                <Typography color="#aaa">No notes yet.</Typography>
+              )}
+
+              <Divider sx={{ my: 2, borderColor: "#333" }} />
+
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                ❤️ Liked Notes
+              </Typography>
+              {likedNotes.length > 0 ? (
+                likedNotes.map((n) => renderNoteCard(n, false, true))
+              ) : (
+                <Typography color="#aaa">No liked notes yet.</Typography>
+              )}
+            </>
+          )}
+
+          <Stack direction="row" spacing={2} mt={3} justifyContent="center">
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/notes")}
+              sx={{
+                borderRadius: 3,
+                px: 4,
+                borderColor: "#555",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#333" },
+              }}
             >
-              <Avatar
-                sx={{
-                  width: 90,
-                  height: 90,
-                  mb: 1.5,
-                  bgcolor:
-                    profile.role === "admin" ? "error.main" : "primary.main",
-                  fontSize: 36,
-                  fontWeight: "bold",
-                  boxShadow: "0 0 20px rgba(0,0,0,0.5)",
-                }}
-              />
-              <Typography variant="h6" fontWeight="bold">
-                {profile.name}
-              </Typography>
-              <Chip
-                label={profile.role.toUpperCase()}
-                color={profile.role === "admin" ? "error" : "primary"}
-                sx={{ mt: 0.5, mb: 1, fontWeight: "bold" }}
-              />
-              <Typography variant="body2" sx={{ color: "#bbb" }}>
-                {profile.email}
-              </Typography>
-            </Box>
+              Back
+            </Button>
 
-            <Divider sx={{ mb: 2, borderColor: "#333" }} />
-
-            {/* Notes Section */}
-            {isAdmin && profile._id !== currentuser._id ? (
-              <>
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-                  🛠 Manage {profile.role === "admin" ? "Admin" : "User"}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color={profile.isBlocked ? "success" : "error"}
-                  onClick={() =>
-                    handleConfirmBlock(profile._id, profile.isBlocked)
-                  }
-                  sx={{ borderRadius: 3, px: 3, mb: 2 }}
-                >
-                  {profile.isBlocked ? "Unblock" : "Block"}
-                </Button>
-              </>
-            ) : null}
-
-            <Divider sx={{ my: 2, borderColor: "#333" }} />
-
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-              📝{" "}
-              {isAdmin && profile._id !== currentuser._id
-                ? `${profile.name}'s Notes`
-                : "My Notes"}
-            </Typography>
-            {myNotes.length > 0 ? (
-              myNotes.map((n) =>
-                renderNoteCard(n, !id && n.user?._id === currentuser._id, false)
-              )
-            ) : (
-              <Typography color="#aaa">No notes yet.</Typography>
-            )}
-
-            <Divider sx={{ my: 2, borderColor: "#333" }} />
-
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-              ❤️ Liked Notes
-            </Typography>
-            {likedNotes.length > 0 ? (
-              likedNotes.map((n) => renderNoteCard(n, false, true))
-            ) : (
-              <Typography color="#aaa">No liked notes yet.</Typography>
-            )}
-
-            <Stack direction="row" spacing={2} mt={3} justifyContent="center">
+            {/* Logout button only if it's your own profile */}
+            {String(profile._id) === String(currentuser._id) && (
               <Button
                 variant="outlined"
-                onClick={() => navigate("/notes")}
+                color="error"
+                onClick={() => {
+                  removeCookie("currentuser", { path: "/" });
+                  toast.success("Logged out successfully");
+                  navigate("/login");
+                }}
                 sx={{
                   borderRadius: 3,
                   px: 4,
-                  borderColor: "#555",
+                  borderColor: "#ff4444",
                   color: "#fff",
-                  "&:hover": { backgroundColor: "#333" },
+                  "&:hover": { backgroundColor: "#ff4444", color: "#000" },
                 }}
               >
-                Back
+                Logout
               </Button>
-              {String(profile._id) === String(currentuser._id) && (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() => {
-                    removeCookie("currentuser", { path: "/" });
-                    toast.success("Logged out successfully");
-                    navigate("/login");
-                  }}
-                  sx={{
-                    borderRadius: 3,
-                    px: 4,
-                    borderColor: "#ff4444",
-                    color: "#fff",
-                    "&:hover": { backgroundColor: "#ff4444", color: "#000" },
-                  }}
-                >
-                  Logout
-                </Button>
-              )}
-            </Stack>
+            )}
+          </Stack>
+        </Card>
 
-            {/* Block Dialog */}
-            <Dialog
-              open={confirmDialog.open}
-              onClose={() =>
+        {/* Dialogs */}
+        <Dialog
+          open={confirmDialog.open}
+          onClose={() =>
+            setConfirmDialog({ open: false, userId: null, isBlocked: false })
+          }
+        >
+          <DialogTitle>
+            {confirmDialog.isBlocked ? "Unblock User?" : "Block User?"}
+          </DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to{" "}
+              <strong>{confirmDialog.isBlocked ? "unblock" : "block"}</strong>{" "}
+              this{" "}
+              {profile.role === "admin" ? (
+                <strong style={{ color: "red" }}>admin</strong>
+              ) : (
+                "user"
+              )}
+              ?
+            </Typography>
+          </DialogContent>
+
+          <DialogActions>
+            <Button
+              onClick={() =>
                 setConfirmDialog({
                   open: false,
                   userId: null,
@@ -437,50 +531,17 @@ const UserProfile = () => {
                 })
               }
             >
-              <DialogTitle>
-                {confirmDialog.isBlocked ? "Unblock User?" : "Block User?"}
-              </DialogTitle>
-              <DialogContent>
-                <Typography>
-                  Are you sure you want to{" "}
-                  <strong>
-                    {confirmDialog.isBlocked ? "unblock" : "block"}
-                  </strong>{" "}
-                  {profile.role === "admin" ? (
-                    <strong style={{ color: "red" }}>admin</strong>
-                  ) : (
-                    "user"
-                  )}
-                  ?
-                </Typography>
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  onClick={() =>
-                    setConfirmDialog({
-                      open: false,
-                      userId: null,
-                      isBlocked: false,
-                    })
-                  }
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleToggleBlock}
-                  color={confirmDialog.isBlocked ? "success" : "error"}
-                  variant="contained"
-                >
-                  {confirmDialog.isBlocked ? "Unblock" : "Block"}
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </Card>
-        ) : (
-          <Typography color="#aaa" textAlign="center" mt={10}>
-            User not found.
-          </Typography>
-        )}
+              Cancel
+            </Button>
+            <Button
+              onClick={handleToggleBlock}
+              color={confirmDialog.isBlocked ? "success" : "error"}
+              variant="contained"
+            >
+              {confirmDialog.isBlocked ? "Unblock" : "Block"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );
