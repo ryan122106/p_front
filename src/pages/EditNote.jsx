@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useDropzone } from "react-dropzone";
 import {
   Box,
   Container,
@@ -15,6 +14,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import UploadIcon from "@mui/icons-material/Upload";
 import CloseIcon from "@mui/icons-material/Close";
 import Header from "../components/Header";
 import { useCookies } from "react-cookie";
@@ -23,19 +23,12 @@ import axios from "axios";
 import { getNoteById, updateNote } from "../utils/api_notes";
 import { API_URL } from "../utils/constants";
 
-// Helper: determine MIME type from file extension
 const getMimeTypeFromUrl = (url) => {
   const ext = url.split(".").pop()?.toLowerCase();
   if (["mp4", "webm", "ogg"].includes(ext)) return `video/${ext}`;
   if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext))
     return `image/${ext}`;
   return "application/octet-stream";
-};
-
-// Helper: convert relative/absolute URLs to full URL
-const getFullFileUrl = (url) => {
-  if (url.startsWith("http")) return url;
-  return `${API_URL.replace(/\/api$/, "")}${url}`;
 };
 
 const EditNote = () => {
@@ -47,82 +40,69 @@ const EditNote = () => {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [files, setFiles] = useState([]); // newly added files
-  const [preview, setPreview] = useState([]); // {url, type, isNew}
+  const [files, setFiles] = useState([]);
+  const [preview, setPreview] = useState([]);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Fetch note data
   useEffect(() => {
-    const fetchNote = async () => {
-      try {
-        const note = await getNoteById(id, token);
-        setTitle(note.title);
-        setContent(note.content);
-        const fullPreviews = (note.media || []).map((url) => ({
-          url: getFullFileUrl(url),
-          type: getMimeTypeFromUrl(url),
-          isNew: false, // existing files
-        }));
-        setPreview(fullPreviews);
-      } catch {
-        toast.error("Error loading note");
-      }
-    };
     fetchNote();
-  }, [id, token]);
+  }, [id]);
 
-  // Dropzone
-  const onDrop = useCallback((acceptedFiles) => {
-    setFiles((prev) => [...prev, ...acceptedFiles]);
-    const newPreviews = acceptedFiles.map((file) => ({
+  const fetchNote = async () => {
+    try {
+      const note = await getNoteById(id, token);
+      setTitle(note.title);
+      setContent(note.content);
+
+      const fullPreviews = (note.media || []).map((url) => {
+        const fullUrl = url.startsWith("http") ? url : `${API_URL}/${url}`;
+        return {
+          url: fullUrl,
+          type: getMimeTypeFromUrl(fullUrl),
+        };
+      });
+
+      setPreview(fullPreviews);
+    } catch {
+      toast.error("Error loading note");
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files);
+
+    setFiles(selected);
+
+    const newPreviews = selected.map((file) => ({
       url: URL.createObjectURL(file),
       type: file.type,
-      isNew: true, // mark as newly added
     }));
-    setPreview((prev) => [...prev, ...newPreviews]);
-  }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "image/*": [],
-      "video/*": [],
-    },
-  });
+    setPreview(newPreviews);
+  };
 
   const handleRemovePreview = (index) => {
-    const p = preview[index];
-    if (p.isNew) {
-      setFiles((prev) => prev.filter((_, i) => i !== files.indexOf(p)));
-    }
+    setFiles((prev) => prev.filter((_, i) => i !== index));
     setPreview((prev) => prev.filter((_, i) => i !== index));
   };
 
   const uploadFiles = async () => {
     if (files.length === 0) {
-      // Keep only existing files' relative URLs
-      return preview
-        .filter((p) => !p.isNew)
-        .map((p) => p.url.replace(API_URL.replace(/\/api$/, ""), ""));
+      return preview.map((item) => item.url);
     }
 
     const formData = new FormData();
     files.forEach((file) => formData.append("media", file));
 
-    const res = await axios.post(`${API_URL}/image`, formData, {
+    const res = await axios.post("http://localhost:5123/image", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
       },
     });
 
-    // combine existing files with newly uploaded URLs
-    const uploadedUrls = res.data.urls;
-    const existingUrls = preview
-      .filter((p) => !p.isNew)
-      .map((p) => p.url.replace(API_URL.replace(/\/api$/, ""), ""));
-    return [...existingUrls, ...uploadedUrls];
+    return res.data.urls;
   };
 
   const handleSubmit = (e) => {
@@ -151,7 +131,14 @@ const EditNote = () => {
       <Header current="notes" title="Edit Note" />
       <Container maxWidth="sm" sx={{ mt: 4, mb: 6 }}>
         <Paper
-          sx={{ p: 4, borderRadius: 4, bgcolor: "#1e1e1e", color: "#f5f5f5" }}
+          elevation={3}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            boxShadow: 3,
+            bgcolor: "#1e1e1e",
+            color: "#f5f5f5",
+          }}
         >
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Edit Your Note
@@ -194,31 +181,35 @@ const EditNote = () => {
               }}
             />
 
-            {/* Dropzone */}
-            <Box
-              {...getRootProps()}
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<UploadIcon />}
               sx={{
                 mt: 2,
                 mb: 2,
-                p: 2,
-                border: "2px dashed #888",
                 borderRadius: 3,
-                textAlign: "center",
-                cursor: "pointer",
-                bgcolor: isDragActive ? "#333" : "#1e1e1e",
+                color: "#fff",
+                borderColor: "#444",
               }}
             >
-              <input {...getInputProps()} />
-              <Typography>
-                {isDragActive
-                  ? "Drop files here..."
-                  : "Drag & drop media here or click to select files"}
-              </Typography>
-            </Box>
+              Update Media
+              <input
+                type="file"
+                name="media"
+                multiple
+                hidden
+                onChange={handleFileChange}
+              />
+            </Button>
 
-            {/* Previews */}
             {preview.length > 0 && (
-              <Stack direction="row" flexWrap="wrap" gap={2} sx={{ mt: 2 }}>
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                gap={2}
+                sx={{ mt: 2, mb: 2 }}
+              >
                 {preview.map((item, index) => (
                   <Box
                     key={index}
@@ -253,6 +244,7 @@ const EditNote = () => {
                         }}
                       />
                     )}
+
                     <IconButton
                       size="small"
                       onClick={() => handleRemovePreview(index)}

@@ -13,21 +13,19 @@ import {
   CardActions,
   Divider,
   Paper,
-  Stack,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
+  Stack,
 } from "@mui/material";
-import {
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Comment as CommentIcon,
-  ThumbUp as ThumbUpIcon,
-  Add as AddIcon,
-  Download as DownloadIcon,
-} from "@mui/icons-material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import CommentIcon from "@mui/icons-material/Comment";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import AddIcon from "@mui/icons-material/Add";
+import DownloadIcon from "@mui/icons-material/Download";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "../components/Header";
 import { toast } from "sonner";
@@ -36,82 +34,6 @@ import { toggleLike, getLikesCount } from "../utils/api_likes";
 import { saveAs } from "file-saver";
 
 const MotionDiv = motion.div;
-
-// ✅ Dropzone-ready media helpers
-const getFullFileUrl = (file) => {
-  if (!file) return "";
-  return file.startsWith("http")
-    ? file
-    : `http://localhost:5123/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
-};
-
-const getMimeTypeFromFile = (file) => {
-  const ext = file.split(".").pop()?.toLowerCase();
-  if (["mp4", "webm", "ogg"].includes(ext)) return `video/${ext}`;
-  if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext))
-    return `image/${ext}`;
-  return "application/octet-stream";
-};
-
-const renderMedia = (media) => {
-  if (!media || media.length === 0) return null;
-
-  return (
-    <Stack direction="row" spacing={2} flexWrap="wrap" mt={2}>
-      {media.map((file, idx) => {
-        const src = getFullFileUrl(file);
-        const type = getMimeTypeFromFile(file);
-        const isVideo = type.startsWith("video");
-
-        return (
-          <Box
-            key={idx}
-            sx={{
-              width: 140,
-              height: 140,
-              borderRadius: 2,
-              overflow: "hidden",
-              border: "1px solid #333",
-              position: "relative",
-              bgcolor: "#000",
-            }}
-          >
-            {isVideo ? (
-              <video
-                src={src}
-                controls
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <img
-                src={src}
-                alt={`media-${idx}`}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                onError={(e) => (e.target.style.display = "none")}
-              />
-            )}
-
-            <IconButton
-              size="small"
-              onClick={() => saveAs(src, src.split("/").pop())}
-              sx={{
-                position: "absolute",
-                bottom: 4,
-                right: 4,
-                bgcolor: "rgba(0,0,0,0.6)",
-                "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
-                color: "#fff",
-                p: 0.5,
-              }}
-            >
-              <DownloadIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        );
-      })}
-    </Stack>
-  );
-};
 
 const Notes = () => {
   const [notes, setNotes] = useState([]);
@@ -129,12 +51,10 @@ const Notes = () => {
 
   const navigate = useNavigate();
 
-  // Debounced search
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(searchText), 300);
+    const handler = setTimeout(() => setDebouncedSearch(searchText),1);
     return () => clearTimeout(handler);
   }, [searchText]);
-
   const fetchNotes = async () => {
     try {
       const res = await getNotes(token || "", {
@@ -144,7 +64,6 @@ const Notes = () => {
       setNotes(res);
       setFilteredNotes(res);
 
-      // fetch likes count
       const counts = {};
       for (const n of res) {
         counts[n._id] = await getLikesCount(n._id, "note", token || "");
@@ -159,7 +78,6 @@ const Notes = () => {
   useEffect(() => {
     fetchNotes();
   }, [debouncedSearch, sortOption]);
-
   useEffect(() => {
     if (!searchText.trim()) return setFilteredNotes(notes);
     const filtered = notes.filter(
@@ -201,6 +119,44 @@ const Notes = () => {
     }
   };
 
+  const renderMedia = (media) => {
+    if (!media || media.length === 0) return null;
+    const file = media[0];
+    const isVideo = file.endsWith(".mp4");
+    const src = file.startsWith("http")
+      ? file
+      : `http://localhost:5123/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
+
+    return (
+      <MotionDiv
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          background: "#000",
+        }}
+      >
+        {isVideo ? (
+          <video
+            src={src}
+            controls
+            style={{ width: "100%", borderRadius: 10 }}
+          />
+        ) : (
+          <img
+            src={src}
+            alt="note"
+            style={{ width: "100%", borderRadius: 10, objectFit: "cover" }}
+            onError={(e) => (e.target.style.display = "none")}
+          />
+        )}
+      </MotionDiv>
+    );
+  };
+
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -219,7 +175,13 @@ const Notes = () => {
     <>
       <Header current="notes" title="Chattrix" />
       <Box
-        sx={{ bgcolor: "#121212", minHeight: "100vh", pt: 2, color: "#fff" }}
+        sx={{
+          bgcolor: "linear-gradient(180deg, #0d0d0d 0%, #121212 100%)",
+          minHeight: "100vh",
+          color: "#fff",
+          pt: 2,
+          position: "relative",
+        }}
       >
         <Container maxWidth="sm" sx={{ mt: 4, mb: 6 }}>
           <Paper
@@ -250,23 +212,23 @@ const Notes = () => {
                 : "Login to Share Your Thought"}
             </Button>
           </Paper>
-
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search notes..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            sx={{
-              mb: 2,
-              input: { color: "#fff" },
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": { borderColor: "#555" },
-                "&:hover fieldset": { borderColor: "#90caf9" },
-              },
-            }}
-          />
-
+          <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+            <TextField
+              fullWidth
+              size="small"
+              variant="outlined"
+              placeholder="Search notes..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              sx={{
+                input: { color: "#fff" },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": { borderColor: "#555" },
+                  "&:hover fieldset": { borderColor: "#90caf9" },
+                },
+              }}
+            />
+          </Box>
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
             <Button
               variant={sortOption === "mostLiked" ? "contained" : "outlined"}
@@ -282,9 +244,11 @@ const Notes = () => {
               Newest
             </Button>
           </Box>
-
           {filteredNotes.length === 0 ? (
-            <Typography sx={{ mt: 6, color: "#aaa", textAlign: "center" }}>
+            <Typography
+              variant="h6"
+              sx={{ mt: 6, color: "#aaa", textAlign: "center" }}
+            >
               📝 No posts found for "{searchText}"
             </Typography>
           ) : (
@@ -309,12 +273,20 @@ const Notes = () => {
                       <Card
                         elevation={10}
                         sx={{
+                          position: "relative",
                           mb: 5,
                           borderRadius: 4,
                           overflow: "hidden",
                           background:
                             "linear-gradient(135deg, rgba(20,20,20,0.9), rgba(25,25,25,0.8))",
                           border: "1px solid rgba(255,255,255,0.08)",
+                          boxShadow: "0 8px 25px rgba(0,0,0,0.5)",
+                          transition:
+                            "transform 0.3s ease, box-shadow 0.3s ease",
+                          "&:hover": {
+                            transform: "translateY(-6px)",
+                            boxShadow: "0 12px 35px rgba(0,0,0,0.7)",
+                          },
                         }}
                       >
                         <Box
@@ -337,6 +309,8 @@ const Notes = () => {
                                 mr: 2,
                                 bgcolor: "primary.main",
                                 cursor: "pointer",
+                                transition: "0.3s",
+                                "&:hover": { transform: "scale(1.1)" },
                               }}
                               onClick={() =>
                                 navigate(`/profile/${note.user?._id}`)
@@ -346,7 +320,7 @@ const Notes = () => {
                               <Typography
                                 variant="subtitle1"
                                 fontWeight="bold"
-                                sx={{ cursor: "pointer", color: "#fff" }}
+                                sx={{ cursor: "pointer", color:"#fff" }}
                                 onClick={() =>
                                   navigate(`/profile/${note.user?._id}`)
                                 }
@@ -374,13 +348,17 @@ const Notes = () => {
                           </Typography>
                         </Box>
 
-                        {/* ✅ Render all media using Dropzone-style */}
-                        {renderMedia(note.media)}
+                        {/* 🖼 Media */}
 
+                          {renderMedia(note.media, note.title)}
+
+
+
+                        {/* 📝 Content */}
                         <CardContent sx={{ px: 3, py: 2 }}>
                           <Typography
                             variant="h6"
-                            sx={{ fontWeight: "bold", mb: 1, color: "#fff" }}
+                            sx={{ fontWeight: "bold", mb: 1 , color: "#fff"}}
                           >
                             {note.title}
                           </Typography>
@@ -394,6 +372,7 @@ const Notes = () => {
 
                         <Divider sx={{ borderColor: "#333" }} />
 
+                        {/* ❤️ Actions */}
                         <CardActions
                           sx={{
                             display: "flex",
@@ -402,23 +381,30 @@ const Notes = () => {
                             pb: 1.5,
                           }}
                         >
+                          {/* ❤️ Like + 💬 Comment */}
                           <Stack
                             direction="row"
                             alignItems="center"
                             spacing={1}
                           >
-                            <IconButton
-                              onClick={() => handleLike(note._id)}
-                              sx={{
-                                color: "#90caf9",
-                                "&:hover": { color: "#64b5f6" },
-                              }}
+                            <motion.div
+                              whileTap={{ scale: 1.2 }}
+                              transition={{ type: "spring", stiffness: 400 }}
                             >
-                              <ThumbUpIcon fontSize="small" />
-                            </IconButton>
+                              <IconButton
+                                onClick={() => handleLike(note._id)}
+                                sx={{
+                                  color: "#90caf9",
+                                  "&:hover": { color: "#64b5f6" },
+                                }}
+                              >
+                                <ThumbUpIcon fontSize="small" />
+                              </IconButton>
+                            </motion.div>
                             <Typography variant="body2" color="#bbb">
                               {likes[note._id] || 0}
                             </Typography>
+
                             <IconButton
                               onClick={() => navigate(`/comments/${note._id}`)}
                               sx={{
@@ -428,8 +414,32 @@ const Notes = () => {
                             >
                               <CommentIcon fontSize="small" />
                             </IconButton>
+
+                            {/* ⬇️ Small Download Button beside comment */}
+                            {note.media?.length > 0 && (
+                              <IconButton
+                                onClick={() => {
+                                  const file = note.media[0];
+                                  const src = file.startsWith("http")
+                                    ? file
+                                    : `http://localhost:5123/${file
+                                        .replace(/^\/+/, "")
+                                        .replace(/\\/g, "/")}`;
+                                  const fileName =
+                                    src.split("/").pop() || "downloaded_file";
+                                  saveAs(src, fileName);
+                                }}
+                                sx={{
+                                  color: "#90caf9",
+                                  "&:hover": { color: "#64b5f6" },
+                                }}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            )}
                           </Stack>
 
+                          {/* ✏️ Edit & 🗑 Delete (if allowed) */}
                           <Box sx={{ display: "flex", gap: 1 }}>
                             {canEdit && (
                               <IconButton
@@ -460,32 +470,63 @@ const Notes = () => {
           )}
         </Container>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={deleteConfirmOpen}
-          onClose={() => setDeleteConfirmOpen(false)}
-        >
-          <DialogTitle>Confirm Delete</DialogTitle>
-          <DialogContent>
-            <Typography>Are you sure you want to delete this post?</Typography>
-            {noteToDelete && (
-              <Typography sx={{ mt: 1, fontStyle: "italic" }}>
-                “{noteToDelete.title || noteToDelete.content.slice(0, 40)}”
-              </Typography>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-            <Button
-              onClick={handleConfirmDelete}
-              color="error"
-              variant="contained"
-            >
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* 📍 Fixed Feedback Button */}
+        {currentuser && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/feedback/list")}
+            sx={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              borderRadius: "50px",
+              px: 3,
+              py: 1,
+              fontWeight: "bold",
+              boxShadow: "0 0 20px rgba(0,136,255,0.6)",
+              zIndex: 1000,
+              animation: "jump 1.2s ease-in-out infinite", // 🔹 animation added
+              "@keyframes jump": {
+                "0%, 100%": {
+                  transform: "translateY(0)",
+                },
+                "50%": {
+                  transform: "translateY(-10px)",
+                },
+              },
+            }}
+          >
+            Give Us Feedback
+          </Button>
+        )}
       </Box>
+
+      {/* 🗑️ Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this post?</Typography>
+          {noteToDelete && (
+            <Typography sx={{ mt: 1, fontStyle: "italic" }}>
+              “{noteToDelete.title || noteToDelete.content.slice(0, 40)}”
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

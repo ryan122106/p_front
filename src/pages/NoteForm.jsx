@@ -1,6 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useDropzone } from "react-dropzone";
 import {
   Box,
   Container,
@@ -10,9 +9,13 @@ import {
   Typography,
   IconButton,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
 import UploadIcon from "@mui/icons-material/Upload";
+import CloseIcon from "@mui/icons-material/Close";
 import Header from "../components/Header";
 import { useCookies } from "react-cookie";
 import { toast } from "sonner";
@@ -28,22 +31,25 @@ const NoteForm = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [files, setFiles] = useState([]);
+  const [preview, setPreview] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles) => {
-    setFiles((prev) => [...prev, ...acceptedFiles]);
-  }, []);
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(selectedFiles);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "image/*": [],
-      "video/*": [],
-    },
-  });
+    const previews = selectedFiles.map((file) => ({
+      url: URL.createObjectURL(file),
+      type: file.type,
+    }));
 
-  const handleRemoveFile = (index) => {
+    setPreview(previews);
+  };
+
+  const handleRemovePreview = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreview((prev) => prev.filter((_, i) => i !== index));
   };
 
   const uploadFiles = async () => {
@@ -51,7 +57,7 @@ const NoteForm = () => {
     const formData = new FormData();
     files.forEach((file) => formData.append("media", file));
 
-    const res = await axios.post(`${process.env.REACT_APP_API_URL}/image`, formData, {
+    const res = await axios.post("http://localhost:5123/api/image", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
@@ -61,8 +67,13 @@ const NoteForm = () => {
     return res.data.urls;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setConfirmOpen(false);
     setLoading(true);
     try {
       const mediaUrls = await uploadFiles();
@@ -80,8 +91,18 @@ const NoteForm = () => {
   return (
     <>
       <Header current="notes" title="Create Note" />
+
       <Container maxWidth="sm" sx={{ mt: 4, mb: 6 }}>
-        <Paper sx={{ p: 4, borderRadius: 4, bgcolor: "#1e1e1e", color: "#fff" }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            boxShadow: 3,
+            bgcolor: "#1e1e1e",
+            color: "#f5f5f5",
+          }}
+        >
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Share a New Note
           </Typography>
@@ -106,7 +127,7 @@ const NoteForm = () => {
 
             <TextField
               fullWidth
-              label="Content"
+              label="What's on your mind?"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
@@ -123,32 +144,36 @@ const NoteForm = () => {
               }}
             />
 
-            {/* Dropzone */}
-            <Box
-              {...getRootProps()}
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<UploadIcon />}
               sx={{
                 mt: 2,
                 mb: 2,
-                p: 2,
-                border: "2px dashed #888",
                 borderRadius: 3,
-                textAlign: "center",
-                cursor: "pointer",
-                bgcolor: isDragActive ? "#333" : "#1e1e1e",
+                color: "#fff",
+                borderColor: "#444",
               }}
             >
-              <input {...getInputProps()} />
-              {isDragActive ? (
-                <Typography>Drop the files here...</Typography>
-              ) : (
-                <Typography>Drag & drop media here, or click to select files</Typography>
-              )}
-            </Box>
+              Upload Media
+              <input
+                type="file"
+                name="media"
+                multiple
+                hidden
+                onChange={handleFileChange}
+              />
+            </Button>
 
-            {/* Previews */}
-            {files.length > 0 && (
-              <Stack direction="row" flexWrap="wrap" gap={2} sx={{ mt: 2 }}>
-                {files.map((file, index) => (
+            {preview.length > 0 && (
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                gap={2}
+                sx={{ mt: 2, mb: 2 }}
+              >
+                {preview.map((item, index) => (
                   <Box
                     key={index}
                     sx={{
@@ -158,25 +183,37 @@ const NoteForm = () => {
                       borderRadius: 3,
                       overflow: "hidden",
                       border: "1px solid #333",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       backgroundColor: "#000",
                     }}
                   >
-                    {file.type.startsWith("video") ? (
+                    {item.type.startsWith("video") ? (
                       <video
-                        src={URL.createObjectURL(file)}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        src={item.url}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                         controls
                       />
                     ) : (
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={item.url}
                         alt={`preview-${index}`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     )}
+
                     <IconButton
                       size="small"
-                      onClick={() => handleRemoveFile(index)}
+                      onClick={() => handleRemovePreview(index)}
                       sx={{
                         position: "absolute",
                         top: 4,
@@ -194,16 +231,47 @@ const NoteForm = () => {
             )}
 
             <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
-              <Button type="submit" variant="contained" disabled={loading} sx={{ borderRadius: 3 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading}
+                sx={{ borderRadius: 3 }}
+              >
                 Create Note
               </Button>
-              <Button variant="outlined" onClick={() => navigate("/notes")} sx={{ borderRadius: 3, color: "#fff", borderColor: "#444" }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate("/notes")}
+                sx={{
+                  borderRadius: 3,
+                  color: "#fff",
+                  borderColor: "#444",
+                }}
+              >
                 Cancel
               </Button>
             </Box>
           </Box>
         </Paper>
       </Container>
+
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirm Creation</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to create this note?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmSubmit}
+            variant="contained"
+            color="primary"
+            disabled={loading}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
