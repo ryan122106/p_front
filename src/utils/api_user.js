@@ -43,7 +43,7 @@ export const getUserLikedNotes = async (userId, token) => {
 export const getUsers = async (token, search = "") => {
   const res = await axios.get(`${API_URL}/users`, {
     headers: { Authorization: `Bearer ${token}` },
-    params: { search }, // ✅ this sends ?search=value
+    params: { search },
   });
   return res.data;
 };

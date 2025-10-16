@@ -114,6 +114,7 @@ const CommentsPage = () => {
   const handleConfirmEdit = async () => {
     if (!commentToEdit) return;
     try {
+
       const updated = await updateComment(
         commentToEdit.id,
         commentToEdit.newContent,
@@ -134,6 +135,7 @@ const CommentsPage = () => {
     } finally {
       setEditConfirmOpen(false);
       setCommentToEdit(null);
+
     }
   };
 
@@ -166,6 +168,7 @@ const CommentsPage = () => {
       toast.error("Please log in to like comments");
       return;
     }
+
     try {
       await toggleLike(commentId, token, "comment");
       const count = await getLikesCount(commentId, "comment", token);
@@ -183,6 +186,7 @@ const CommentsPage = () => {
         <Container maxWidth="sm" sx={{ mt: 3, mb: 6 }}>
           <Typography variant="h4" gutterBottom fontWeight={600}>
             Comments
+
           </Typography>
           {token ? (
             <Box mt={2} mb={3}>
@@ -222,6 +226,7 @@ const CommentsPage = () => {
 
           <Divider sx={{ borderColor: "#333", mb: 2 }} />
           {comments.length === 0 ? (
+
             <Typography sx={{ color: "#aaa" }}>No comments yet.</Typography>
           ) : (
             comments.map((c) => {
@@ -259,6 +264,7 @@ const CommentsPage = () => {
                       </Box>
                     </Box>
 
+
                     {editingId === c._id ? (
                       <Box>
                         <TextField
@@ -282,6 +288,7 @@ const CommentsPage = () => {
                         <Box sx={{ display: "flex", gap: 1 }}>
                           <Button
                             variant="contained"
+
                             size="small"
                             onClick={() => handleSaveEdit(c._id)}
                           >
@@ -305,6 +312,7 @@ const CommentsPage = () => {
                     <Divider sx={{ borderColor: "#333", my: 1 }} />
 
                     <CardActions sx={{ p: 0, gap: 1 }}>
+
                       {canEdit && editingId !== c._id && (
                         <Button
                           size="small"
@@ -325,6 +333,7 @@ const CommentsPage = () => {
                       <Button
                         size="small"
                         startIcon={<ThumbUpIcon />}
+
                         onClick={() => handleLike(c._id)}
                         sx={{ color: "#bbb" }}
                       >
@@ -340,6 +349,7 @@ const CommentsPage = () => {
           <Box mt={3}>
             <Button variant="outlined" onClick={() => navigate("/notes")}>
               Back
+
             </Button>
           </Box>
         </Container>
@@ -355,6 +365,7 @@ const CommentsPage = () => {
           <Typography>Are you sure you want to post this comment?</Typography>
           <Typography
             sx={{
+
               mt: 2,
               p: 1,
               bgcolor: "#f0f0f0",
@@ -377,6 +388,7 @@ const CommentsPage = () => {
           >
             Confirm
           </Button>
+          
         </DialogActions>
       </Dialog>
 

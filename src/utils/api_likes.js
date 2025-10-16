@@ -1,8 +1,7 @@
-// src/utils/api_likes.js
+
 import axios from "axios";
 import { API_URL } from "./constants";
 
-// Toggle like for an item (note or comment)
 export const toggleLike = async (itemId, token, itemType = "note") => {
   if (!token) throw new Error("User not authenticated");
 
@@ -19,7 +18,6 @@ export const toggleLike = async (itemId, token, itemType = "note") => {
   }
 };
 
-// Get total likes count for an item
 export const getLikesCount = async (itemId, itemType = "note", token) => {
   try {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -34,7 +32,6 @@ export const getLikesCount = async (itemId, itemType = "note", token) => {
   }
 };
 
-// Get all notes liked by a user
 export const getUserLikedNotes = async (userId, token) => {
   try {
     const res = await axios.get(`${API_URL}/users/${userId}/likes`, {

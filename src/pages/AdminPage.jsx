@@ -109,6 +109,7 @@ const AdminPage = () => {
         <Container maxWidth="sm">
           <Typography variant="h6" color="error">
             Access denied. Admins only.
+
           </Typography>
         </Container>
       </Box>
@@ -128,6 +129,7 @@ const AdminPage = () => {
   };
   const cardVariants = {
     hidden: { opacity: 0, y: 25 },
+
     visible: { opacity: 1, y: 0, transition: { duration: 0.35 } },
     exit: { opacity: 0, y: -20, transition: { duration: 0.25 } },
   };
@@ -142,6 +144,8 @@ const AdminPage = () => {
           <MotionDiv
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
+
+          
             transition={{ duration: 0.5 }}
           >
             <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -167,6 +171,8 @@ const AdminPage = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
+
+
                     <SearchIcon sx={{ color: "#aaa" }} />
                   </InputAdornment>
                 ),
@@ -194,6 +200,7 @@ const AdminPage = () => {
                           color: "#fff",
                           boxShadow: "0 2px 8px rgba(0,0,0,0.6)",
                           transition: "transform 0.25s, box-shadow 0.25s",
+
                           "&:hover": {
                             transform: "translateY(-4px)",
                             boxShadow: "0 8px 20px rgba(0,0,0,0.5)",
@@ -204,6 +211,7 @@ const AdminPage = () => {
                           <Box
                             sx={{
                               display: "flex",
+
                               alignItems: "center",
                               mb: 1,
                             }}
@@ -216,6 +224,7 @@ const AdminPage = () => {
                                 mr: 2,
                                 bgcolor: "primary.main",
                                 cursor: "pointer",
+
                                 "&:hover": { transform: "scale(1.1)" },
                                 transition: "0.2s",
                               }}
@@ -228,6 +237,7 @@ const AdminPage = () => {
                               <Typography
                                 variant="body2"
                                 sx={{ color: "#aaa" }}
+
                               >
                                 {u.email}
                               </Typography>
@@ -241,7 +251,8 @@ const AdminPage = () => {
                         <Divider sx={{ borderColor: "#333" }} />
 
                         <CardActions sx={{ p: 2, gap: 1 }}>
-                          {u.role !== "admin" ? (
+                          {u.role !== "admin" ?
+                           (
                             <Button
                               variant="contained"
                               color="success"
@@ -263,6 +274,7 @@ const AdminPage = () => {
                                 borderRadius: "6px",
                                 textTransform: "none",
                                 pointerEvents: "none",
+
                                 opacity: 0.8,
                               }}
                             >
@@ -273,6 +285,7 @@ const AdminPage = () => {
                           {/* Block / Unblock */}
                           {u._id !== currentuser._id && u.role !== "admin" && (
                             <Button
+
                               variant="outlined"
                               color={u.isBlocked ? "success" : "error"}
                               onClick={() =>
@@ -284,6 +297,7 @@ const AdminPage = () => {
                                   () => handleBlockToggle(u._id, !u.isBlocked)
                                 )
                               }
+
                             >
                               {u.isBlocked ? "Unblock" : "Block"}
                             </Button>
@@ -293,6 +307,7 @@ const AdminPage = () => {
                     </MotionDiv>
                   ))}
                 </AnimatePresence>
+                
               </MotionDiv>
             )}
           </MotionDiv>

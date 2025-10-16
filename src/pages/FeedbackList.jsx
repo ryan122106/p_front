@@ -40,7 +40,6 @@ const FeedbackList = () => {
   const [newFeedback, setNewFeedback] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editedMessage, setEditedMessage] = useState("");
-  const [expandedId, setExpandedId] = useState(null); // Track which feedback is expanded
   const [sortOption, setSortOption] = useState("newest");
 
   const [addConfirmOpen, setAddConfirmOpen] = useState(false);
@@ -65,11 +64,10 @@ const FeedbackList = () => {
     email = "",
   } = currentuser;
 
-  // ---------------- FETCH FEEDBACKS ----------------
   const fetchFeedbacks = async (sort = "") => {
     if (!token) return;
     try {
-      const res = await getFeedbacks(token); // fetch all feedbacks
+      const res = await getFeedbacks(token);
       const counts = {};
       await Promise.all(
         res.map(async (fb) => {
@@ -96,7 +94,6 @@ const FeedbackList = () => {
     fetchFeedbacks(sortOption);
   }, [token, sortOption]);
 
-  // ---------------- ADD FEEDBACK ----------------
   const handleOpenAddConfirm = () => {
     if (!newFeedback.trim()) return toast.error("Please type something first!");
     setPendingFeedback(newFeedback);
@@ -124,7 +121,6 @@ const FeedbackList = () => {
     }
   };
 
-  // ---------------- EDIT FEEDBACK ----------------
   const handleEdit = (feedback) => {
     setEditingId(feedback._id);
     setEditedMessage(feedback.message);
@@ -162,7 +158,6 @@ const FeedbackList = () => {
     }
   };
 
-  // ---------------- DELETE FEEDBACK ----------------
   const handleDeleteClick = (fb) => {
     setFeedbackToDelete(fb);
     setDeleteConfirmOpen(true);
@@ -183,7 +178,6 @@ const FeedbackList = () => {
     }
   };
 
-  // ---------------- LIKE FEEDBACK ----------------
   const handleLike = async (feedbackId) => {
     try {
       await toggleLike(feedbackId, token, "feedback");
