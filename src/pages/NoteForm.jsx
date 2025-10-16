@@ -21,6 +21,7 @@ import { useCookies } from "react-cookie";
 import { toast } from "sonner";
 import axios from "axios";
 import { createNote } from "../utils/api_notes";
+import { API_URL } from "../utils/constants";
 
 const NoteForm = () => {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ const NoteForm = () => {
     const formData = new FormData();
     files.forEach((file) => formData.append("media", file));
 
-    const res = await axios.post("http://localhost:5123/api/image", formData, {
+    const res = await axios.post(`${API_URL}/image`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
