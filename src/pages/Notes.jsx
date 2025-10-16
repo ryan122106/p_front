@@ -31,6 +31,7 @@ import Header from "../components/Header";
 import { toast } from "sonner";
 import { getNotes, deleteNote } from "../utils/api_notes";
 import { toggleLike, getLikesCount } from "../utils/api_likes";
+import { API_URL } from "../utils/constants";
 import { saveAs } from "file-saver";
 
 const MotionDiv = motion.div;
@@ -52,7 +53,7 @@ const Notes = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(searchText),1);
+    const handler = setTimeout(() => setDebouncedSearch(searchText), 1);
     return () => clearTimeout(handler);
   }, [searchText]);
   const fetchNotes = async () => {
@@ -125,7 +126,9 @@ const Notes = () => {
     const isVideo = file.endsWith(".mp4");
     const src = file.startsWith("http")
       ? file
-      : `http://localhost:5123/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
+      : `${API_URL.replace(/\/$/, "")}/${file
+          .replace(/^\/+/, "")
+          .replace(/\\/g, "/")}`;
 
     return (
       <MotionDiv
@@ -320,7 +323,7 @@ const Notes = () => {
                               <Typography
                                 variant="subtitle1"
                                 fontWeight="bold"
-                                sx={{ cursor: "pointer", color:"#fff" }}
+                                sx={{ cursor: "pointer", color: "#fff" }}
                                 onClick={() =>
                                   navigate(`/profile/${note.user?._id}`)
                                 }
@@ -350,15 +353,13 @@ const Notes = () => {
 
                         {/* 🖼 Media */}
 
-                          {renderMedia(note.media, note.title)}
-
-
+                        {renderMedia(note.media, note.title)}
 
                         {/* 📝 Content */}
                         <CardContent sx={{ px: 3, py: 2 }}>
                           <Typography
                             variant="h6"
-                            sx={{ fontWeight: "bold", mb: 1 , color: "#fff"}}
+                            sx={{ fontWeight: "bold", mb: 1, color: "#fff" }}
                           >
                             {note.title}
                           </Typography>
@@ -415,16 +416,17 @@ const Notes = () => {
                               <CommentIcon fontSize="small" />
                             </IconButton>
 
-                            {/* ⬇️ Small Download Button beside comment */}
+                            {/* Small Download Button beside comment */}
                             {note.media?.length > 0 && (
                               <IconButton
                                 onClick={() => {
                                   const file = note.media[0];
                                   const src = file.startsWith("http")
                                     ? file
-                                    : `http://localhost:5123/${file
+                                    : `${API_URL.replace(/\/$/, "")}/${file
                                         .replace(/^\/+/, "")
                                         .replace(/\\/g, "/")}`;
+
                                   const fileName =
                                     src.split("/").pop() || "downloaded_file";
                                   saveAs(src, fileName);
