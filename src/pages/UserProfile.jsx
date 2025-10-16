@@ -36,6 +36,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import CommentIcon from "@mui/icons-material/Comment";
+import { API_URL } from "../utils/constants";
 
 const UserProfile = () => {
   const [cookies, , removeCookie] = useCookies(["currentuser"]);
@@ -173,7 +174,7 @@ const UserProfile = () => {
 
     const src = file.startsWith("http")
       ? file
-      : `http://localhost:5123/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
+      : `${API_URL}/${file.replace(/^\/+/, "").replace(/\\/g, "/")}`;
 
     return (
       <Box
