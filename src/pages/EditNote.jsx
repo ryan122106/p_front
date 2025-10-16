@@ -56,12 +56,14 @@ const EditNote = () => {
       setContent(note.content);
 
       const fullPreviews = (note.media || []).map((url) => {
-        const fullUrl = url.startsWith("http") ? url : `${API_URL}/${url}`;
+        const cleanPath = url
+          .replace(/^\/+/, "") // remove leading slashes
+          .replace(/^api\//, ""); // remove "api/" if it exists
 
-        return {
-          url: fullUrl,
-          type: getMimeTypeFromUrl(fullUrl),
-        };
+        const fullUrl = url.startsWith("http")
+          ? url
+          : `${API_URL.replace(/\/$/, "")}/${cleanPath}`;
+        return { url: fullUrl, type: getMimeTypeFromUrl(fullUrl) };
       });
 
       setPreview(fullPreviews);
