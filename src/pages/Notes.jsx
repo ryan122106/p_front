@@ -351,11 +351,8 @@ const Notes = () => {
                           </Typography>
                         </Box>
 
-                        {/* 🖼 Media */}
-
                         {renderMedia(note.media, note.title)}
 
-                        {/* 📝 Content */}
                         <CardContent sx={{ px: 3, py: 2 }}>
                           <Typography
                             variant="h6"
@@ -373,7 +370,7 @@ const Notes = () => {
 
                         <Divider sx={{ borderColor: "#333" }} />
 
-                        {/* ❤️ Actions */}
+
                         <CardActions
                           sx={{
                             display: "flex",
@@ -382,7 +379,7 @@ const Notes = () => {
                             pb: 1.5,
                           }}
                         >
-                          {/* ❤️ Like + 💬 Comment */}
+
                           <Stack
                             direction="row"
                             alignItems="center"
@@ -504,7 +501,7 @@ const Notes = () => {
         )}
       </Box>
 
-      {/* 🗑️ Delete Confirmation Dialog */}
+      {/* Dialogs */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
